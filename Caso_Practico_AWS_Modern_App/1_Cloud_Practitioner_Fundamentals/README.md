@@ -1,6 +1,6 @@
 # Fundamentos de Cloud Practitioner para la Aplicación Moderna
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 Este módulo establece los conceptos fundamentales de la computación en la nube de AWS que son esenciales para entender la arquitectura de nuestra aplicación moderna.
 
