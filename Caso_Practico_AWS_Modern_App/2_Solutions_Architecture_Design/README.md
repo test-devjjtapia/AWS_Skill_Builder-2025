@@ -1,6 +1,6 @@
 # Diseño de Arquitectura de Soluciones para la Aplicación Moderna
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 Este módulo se centra en el diseño de la arquitectura de la aplicación, asegurando escalabilidad, alta disponibilidad, tolerancia a fallos y eficiencia. Utilizaremos AWS CloudFormation para definir nuestra infraestructura como código (IaC).
 
