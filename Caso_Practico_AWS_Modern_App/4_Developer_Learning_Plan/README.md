@@ -1,6 +1,6 @@
 # Plan de Aprendizaje para Desarrolladores: Backends Serverless y Contenedorizados
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 Este módulo explora dos enfoques modernos para el desarrollo de backends: serverless y contenedorizado. Ambos ofrecen ventajas significativas en términos de escalabilidad, eficiencia y gestión, y la elección entre ellos dependerá de los requisitos específicos de cada microservicio.
 
