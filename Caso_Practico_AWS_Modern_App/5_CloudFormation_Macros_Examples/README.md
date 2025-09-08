@@ -1,6 +1,6 @@
 # Ejemplos de Macros de CloudFormation
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 Las macros de AWS CloudFormation permiten extender las capacidades de CloudFormation, transformando las plantillas antes de que se procesen. Esto es útil para automatizar tareas repetitivas, aplicar estándares de gobernanza o generar recursos dinámicamente.
 
