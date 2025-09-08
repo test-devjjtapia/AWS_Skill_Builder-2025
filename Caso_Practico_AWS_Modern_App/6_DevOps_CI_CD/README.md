@@ -1,6 +1,6 @@
 # DevOps y CI/CD para la Aplicación Moderna
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 Este módulo se enfoca en la implementación de prácticas de DevOps y un pipeline de Integración Continua/Entrega Continua (CI/CD) para automatizar el proceso de construcción, prueba y despliegue de nuestra aplicación moderna en AWS. Un pipeline de CI/CD robusto es esencial para entregar software de manera rápida y confiable.
 
