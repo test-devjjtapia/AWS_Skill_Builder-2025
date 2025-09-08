@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Definición de tarea ECS para el servicio de pedidos contenedorizado.
+
+Resources:
+  OrderServiceTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: orderService
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: order-app
+          Image: account-id.dkr.ecr.region.amazonaws.com/order-service:latest # Reemplazar con la URI de tu imagen ECR
+          PortMappings:
+            - ContainerPort: 5000
+              Protocol: tcp
+          Environment:
+            - Name: DB_HOST
+              Value: !Ref DatabaseEndpoint # Se asume que la base de datos se crea en otro stack o se referencia aquí
+            - Name: DB_NAME
+              Value: orders_db
+            - Name: DB_USER
+              Value: masteruser
+            - Name: DB_PASSWORD
+              Value: masterpassword # ¡Usar AWS Secrets Manager en producción!
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/order-service
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: OrderServiceAccessPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds-db:connect
+                Resource: !Sub arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:*/${DBUser} # Ajustar según tu usuario de DB
+
+  # Log Group para CloudWatch Logs
+  OrderServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/order-service
+      RetentionInDays: 7
+
+Outputs:
+  OrderServiceTaskDefinitionArn:
+    Description: ARN de la definición de tarea del servicio de pedidos.
+    Value: !Ref OrderServiceTaskDefinition

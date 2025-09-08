@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Macro de CloudFormation que añade etiquetas a todos los recursos.
+
+Resources:
+  AddTagsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  AddTagsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: AddTagsMacroFunction
+      Handler: index.handler
+      Runtime: python3.9
+      Role: !GetAtt AddTagsLambdaRole.Arn
+      Code:
+        ZipFile: |
+          # index.py para la función Lambda de la macro
+          import json
+
+          def add_tags_to_resource(resource, tags):
+              if 'Properties' not in resource:
+                  resource['Properties'] = {}
+              if 'Tags' not in resource['Properties']:
+                  resource['Properties']['Tags'] = []
+              
+              # Convertir las etiquetas de la macro a formato de CloudFormation
+              formatted_tags = []
+              for tag_key, tag_value in tags.items():
+                  formatted_tags.append({'Key': tag_key, 'Value': tag_value})
+
+              resource['Properties']['Tags'].extend(formatted_tags)
+              return resource
+
+          def handler(event, context):
+              try:
+                  fragment = event['fragment']
+                  params = event.get('params', {})
+                  macro_tags = params.get('Tags', {})
+
+                  new_fragment = {}
+                  for resource_name, resource_properties in fragment['Resources'].items():
+                      new_fragment[resource_name] = add_tags_to_resource(resource_properties, macro_tags)
+                  
+                  return {
+                      'requestId': event['requestId'],
+                      'status': 'success',
+                      'fragment': new_fragment
+                  }
+              except Exception as e:
+                  print(f"Error: {e}")
+                  return {
+                      'requestId': event['requestId'],
+                      'status': 'failure',
+                      'errorMessage': str(e),
+                      'fragment': {}
+                  }
+
+  AddTagsMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name: AddTags
+      Description: Macro que añade etiquetas a todos los recursos de una plantilla.
+      FunctionName: !GetAtt AddTagsLambdaFunction.Arn
+
+Outputs:
+  MacroName:
+    Description: Nombre de la macro de CloudFormation.
+    Value: !Ref AddTagsMacro

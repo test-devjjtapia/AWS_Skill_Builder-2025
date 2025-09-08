@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Definición de API Gateway para la API de productos serverless.
+
+Resources:
+  ProductsApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ProductsApi
+      Description: API para gestionar productos.
+
+  ProductsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ProductsApi.RootResourceId
+      PathPart: products
+      RestApiId: !Ref ProductsApi
+
+  ProductByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !Ref ProductsResource
+      PathPart: '{productId}'
+      RestApiId: !Ref ProductsApi
+
+  # Métodos para /products
+  GetProductsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId: !Ref ProductsResource
+      RestApiId: !Ref ProductsApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt ProductLambdaFunction.Arn
+
+  PostProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      ResourceId: !Ref ProductsResource
+      RestApiId: !Ref ProductsApi
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt ProductLambdaFunction.Arn
+
+  # Métodos para /products/{productId}
+  GetProductByIdMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId: !Ref ProductByIdResource
+      RestApiId: !Ref ProductsApi
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.productId: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt ProductLambdaFunction.Arn
+
+  PutProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: PUT
+      ResourceId: !Ref ProductByIdResource
+      RestApiId: !Ref ProductsApi
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.productId: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt ProductLambdaFunction.Arn
+
+  DeleteProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: DELETE
+      ResourceId: !Ref ProductByIdResource
+      RestApiId: !Ref ProductsApi
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.productId: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt ProductLambdaFunction.Arn
+
+  # Función Lambda (referencia)
+  ProductLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ProductHandlerFunction
+      Handler: product_handler.lambda_handler
+      Runtime: python3.9
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          # Código de product_handler.py (se asume que se desplegará con el código real)
+          # Este es un placeholder para la definición de la función en CloudFormation.
+          # El código real se subiría como un paquete de despliegue.
+          import json
+          import os
+          import boto3
+
+          dynamodb = boto3.resource('dynamodb')
+          table_name = os.environ.get('TABLE_NAME', 'Products')
+          table = dynamodb.Table(table_name)
+
+          def lambda_handler(event, context):
+              http_method = event['httpMethod']
+              path = event['path']
+
+              if http_method == 'POST' and path == '/products':
+                  return {'statusCode': 200, 'body': json.dumps({'message': 'Product created (simulated)'})}
+              elif http_method == 'GET' and path == '/products':
+                  return {'statusCode': 200, 'body': json.dumps([{'productId': '1', 'name': 'Simulated Product'}])}
+              elif http_method == 'GET' and path.startswith('/products/'):
+                  return {'statusCode': 200, 'body': json.dumps({'productId': path.split('/')[-1], 'name': 'Simulated Product'})}
+              elif http_method == 'PUT' and path.startswith('/products/'):
+                  return {'statusCode': 200, 'body': json.dumps({'message': 'Product updated (simulated)'})}
+              elif http_method == 'DELETE' and path.startswith('/products/'):
+                  return {'statusCode': 200, 'body': json.dumps({'message': 'Product deleted (simulated)'})}
+              else:
+                  return {'statusCode': 400, 'body': json.dumps({'message': 'Método o ruta no soportada (simulado).'})}
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+
+  # Permiso para que API Gateway invoque la función Lambda
+  LambdaApiGatewayInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ProductLambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProductsApi}/*/*
+
+  # Despliegue de la API
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetProductsMethod
+      - PostProductMethod
+      - GetProductByIdMethod
+      - PutProductMethod
+      - DeleteProductMethod
+    Properties:
+      RestApiId: !Ref ProductsApi
+      Description: Despliegue inicial de la API de productos.
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: prod
+      Description: Etapa de producción.
+      RestApiId: !Ref ProductsApi
+      DeploymentId: !Ref ApiDeployment
+
+Outputs:
+  ApiGatewayInvokeURL:
+    Description: URL para invocar la API de productos.
+    Value: !Sub https://${ProductsApi}.execute-api.${AWS::Region}.amazonaws.com/prod
