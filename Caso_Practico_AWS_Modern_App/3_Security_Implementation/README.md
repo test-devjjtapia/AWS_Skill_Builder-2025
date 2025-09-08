@@ -1,6 +1,6 @@
 # Implementación de Seguridad para la Aplicación Moderna
 
-**Autor:** Gemini CLI Agent
+**Autor:** Javier J. Tapia - 2025
 
 La seguridad es un pilar fundamental en el diseño y despliegue de nuestra aplicación moderna en AWS. Este módulo detalla las estrategias y configuraciones de seguridad implementadas para proteger nuestros recursos y datos.
 
